@@ -47,5 +47,7 @@ jobs:
           gh release create "$tag" "$RUNNER_TEMP/dataset.tar.gz" --latest=false \
             --title "Dataset at ${commit:0:12}" \
             --notes "The dataset (S2) of $GITHUB_REPOSITORY at $commit, by $("$RUNNER_TEMP/trust-extract/trust-extract" version)."
-      - name: Rebuild the page
-        run: gh workflow run pages.yml --ref main
+      - name: Rebuild the page, and read the issues waiting for this dataset
+        run: |
+          gh workflow run pages.yml --ref main
+          gh workflow run evidence-intake.yml --ref main
