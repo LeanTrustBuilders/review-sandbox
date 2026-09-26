@@ -6,8 +6,8 @@ import Sandbox.Divides
 
 namespace Sandbox
 
-/-- A prime number: a natural number whose only divisors are `1` and itself. -/
-def IsPrime (p : Nat) : Prop := 1 ≤ p ∧ ∀ d, Divides d p → d = 1 ∨ d = p
+/-- A prime number: a natural number at least `2` whose only divisors are `1` and itself. -/
+def IsPrime (p : Nat) : Prop := 2 ≤ p ∧ ∀ d, Divides d p → d = 1 ∨ d = p
 
 @[example_of IsPrime]
 theorem isPrime_two : IsPrime 2 := by
@@ -15,6 +15,12 @@ theorem isPrime_two : IsPrime 2 := by
   have hd' := divides_iff_dvd.mp hd
   have h₁ : d ≤ 2 := Nat.le_of_dvd (by decide) hd'
   have h₂ : 0 < d := Nat.pos_of_dvd_of_pos hd' (by decide)
+  omega
+
+/-- `1` is not prime: the edge case the first version of `IsPrime` got wrong. -/
+@[nonexample_of IsPrime]
+theorem not_isPrime_one : ¬ IsPrime 1 := fun h => by
+  have := h.1
   omega
 
 @[nonexample_of IsPrime]
@@ -29,7 +35,7 @@ theorem exists_prime_divides : ∀ n, 2 ≤ n → ∃ p, 2 ≤ p ∧ IsPrime p �
   | ind n ih =>
     intro hn
     by_cases hp : ∀ d, Divides d n → d = 1 ∨ d = n
-    · exact ⟨n, hn, ⟨by omega, hp⟩, divides_refl n⟩
+    · exact ⟨n, hn, ⟨hn, hp⟩, divides_refl n⟩
     · have : ∃ d, Divides d n ∧ d ≠ 1 ∧ d ≠ n :=
         Classical.byContradiction fun h => hp fun d hd =>
           Classical.byContradiction fun hne => h ⟨d, hd, fun h₁ => hne (Or.inl h₁), fun h₂ => hne (Or.inr h₂)⟩
