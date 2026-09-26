@@ -29,24 +29,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: trust-site
+      - name: trust-site, with evidence-core and evidence-store
         run: pip install -q git+https://github.com/LeanTrustBuilders/referee-site
       - name: Datasets
         run: |
-          mkdir -p "$RUNNER_TEMP/ds"
-          tags=$(gh release list --limit 100 --json tagName,createdAt \
-            --jq '[.[] | select(.tagName | startswith("dataset-"))] | sort_by(.createdAt) | .[].tagName')
-          [ -n "$tags" ] || { echo "::error::no dataset yet: run the Dataset workflow"; exit 1; }
-          at=""
-          for tag in $tags; do
-            mkdir -p "$RUNNER_TEMP/ds/$tag"
-            gh release download "$tag" -p dataset.tar.gz -D "$RUNNER_TEMP/ds/$tag"
-            tar -xzf "$RUNNER_TEMP/ds/$tag/dataset.tar.gz" -C "$RUNNER_TEMP/ds/$tag"
-            newest="$RUNNER_TEMP/ds/$tag"
-            at="$at --at $newest"
-          done
-          echo "NEWEST=$newest" >> "$GITHUB_ENV"
-          echo "AT=$at" >> "$GITHUB_ENV"
+          # Every dataset the store's config points to, oldest first: the newest is the page's, the
+          # others say what changed underneath a review made at their commit.
+          evidence-store dataset --all --out "$RUNNER_TEMP/ds" > "$RUNNER_TEMP/datasets.txt"
+          [ -s "$RUNNER_TEMP/datasets.txt" ] || { echo "::error::no dataset yet: run the Dataset workflow"; exit 1; }
+          echo "NEWEST=$(tail -1 "$RUNNER_TEMP/datasets.txt")" >> "$GITHUB_ENV"
+          echo "AT=$(sed 's/^/--at /' "$RUNNER_TEMP/datasets.txt" | paste -sd' ')" >> "$GITHUB_ENV"
       - name: The source at the dataset's commit
         run: git worktree add -q "$RUNNER_TEMP/src" "$(jq -r .library.commit "$NEWEST/meta.json")"
       - name: Build the page
