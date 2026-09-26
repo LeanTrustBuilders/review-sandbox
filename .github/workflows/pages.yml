@@ -1,0 +1,65 @@
+name: Pages
+
+# The claim's page: the newest dataset, the evidence store as it is now, and the datasets of earlier
+# commits (to say what changed underneath a review made there). Intake runs this after recording.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['evidence/**', '.github/workflows/pages.yml']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: trust-site
+        run: pip install -q git+https://github.com/LeanTrustBuilders/referee-site
+      - name: Datasets
+        run: |
+          mkdir -p "$RUNNER_TEMP/ds"
+          tags=$(gh release list --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("dataset-"))] | sort_by(.createdAt) | .[].tagName')
+          [ -n "$tags" ] || { echo "::error::no dataset yet: run the Dataset workflow"; exit 1; }
+          at=""
+          for tag in $tags; do
+            mkdir -p "$RUNNER_TEMP/ds/$tag"
+            gh release download "$tag" -p dataset.tar.gz -D "$RUNNER_TEMP/ds/$tag"
+            tar -xzf "$RUNNER_TEMP/ds/$tag/dataset.tar.gz" -C "$RUNNER_TEMP/ds/$tag"
+            newest="$RUNNER_TEMP/ds/$tag"
+            at="$at --at $newest"
+          done
+          echo "NEWEST=$newest" >> "$GITHUB_ENV"
+          echo "AT=$at" >> "$GITHUB_ENV"
+      - name: The source at the dataset's commit
+        run: git worktree add -q "$RUNNER_TEMP/src" "$(jq -r .library.commit "$NEWEST/meta.json")"
+      - name: Build the page
+        run: trust-site claim --dataset "$NEWEST" --store evidence --source "$RUNNER_TEMP/src" $AT --out _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,16 @@
+{
+ "spec": "ltb-evidence-store/0",
+ "library": {
+  "repo": "LeanTrustBuilders/review-sandbox",
+  "root": "Sandbox"
+ },
+ "datasets": {
+  "repo": "LeanTrustBuilders/review-sandbox",
+  "tag": "dataset-{commit12}",
+  "asset": "dataset.tar.gz"
+ },
+ "claims": [
+  "Sandbox.infinitely_many_primes"
+ ],
+ "maintainers": []
+}
