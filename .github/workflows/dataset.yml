@@ -7,6 +7,11 @@ on:
     branches: [main]
     paths: ['Sandbox/**', 'Sandbox.lean', 'lakefile.toml', 'lake-manifest.json', 'lean-toolchain']
   workflow_dispatch:
+    inputs:
+      replace:
+        description: Extract again and replace the published dataset (for a new extractor release)
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -22,32 +27,31 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+      - name: Already published?
+        id: tag
+        run: |
+          tag="dataset-$(git rev-parse HEAD | cut -c1-12)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" > /dev/null 2>&1 && [ "${{ inputs.replace }}" != "true" ]; then
+            echo "$tag is already published"; echo "done=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Lean
+        if: steps.tag.outputs.done != 'true'
         run: |
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Build the library
+        if: steps.tag.outputs.done != 'true'
         run: lake build
-      - name: trust-extract for the library's toolchain
-        run: |
-          toolchain=$(sed 's/.*:v//' lean-toolchain)
-          tag=$(gh release list -R LeanTrustBuilders/extractor --limit 100 --json tagName,createdAt \
-            --jq "[.[] | select(.tagName | endswith(\"-lean-v$toolchain\"))] | sort_by(.createdAt) | last | .tagName // empty")
-          [ -n "$tag" ] || { echo "::error::no trust-extract release for Lean v$toolchain"; exit 1; }
-          gh release download "$tag" -R LeanTrustBuilders/extractor -p 'trust-extract-linux-x86_64.tar.gz' -D "$RUNNER_TEMP"
-          tar -xzf "$RUNNER_TEMP/trust-extract-linux-x86_64.tar.gz" -C "$RUNNER_TEMP"
-      - name: Extract and publish
-        run: |
-          commit=$(git rev-parse HEAD)
-          tag="dataset-${commit:0:12}"
-          if gh release view "$tag" > /dev/null 2>&1; then echo "$tag exists"; exit 0; fi
-          lake env "$RUNNER_TEMP/trust-extract/trust-extract" extract --root Sandbox \
-            --repo "$GITHUB_REPOSITORY" --out "$RUNNER_TEMP/dataset"
-          tar -czf "$RUNNER_TEMP/dataset.tar.gz" -C "$RUNNER_TEMP/dataset" .
-          gh release create "$tag" "$RUNNER_TEMP/dataset.tar.gz" --latest=false \
-            --title "Dataset at ${commit:0:12}" \
-            --notes "The dataset (S2) of $GITHUB_REPOSITORY at $commit, by $("$RUNNER_TEMP/trust-extract/trust-extract" version)."
+      - if: steps.tag.outputs.done != 'true'
+        uses: LeanTrustBuilders/extractor/extract@main
+        with:
+          root: Sandbox
+          repo: ${{ github.repository }}
+          publish: ${{ steps.tag.outputs.tag }}
+          replace: ${{ inputs.replace || 'false' }}
       - name: Rebuild the page, and read the issues waiting for this dataset
+        if: steps.tag.outputs.done != 'true'
         run: |
           gh workflow run pages.yml --ref main
           gh workflow run evidence-intake.yml --ref main
