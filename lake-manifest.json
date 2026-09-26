@@ -1,0 +1,16 @@
+{"version": "1.2.0",
+ "packagesDir": ".lake/packages",
+ "packages":
+ [{"url": "https://github.com/LeanTrustBuilders/annotations",
+   "type": "git",
+   "subDir": null,
+   "scope": "",
+   "rev": "f7631fc1a3c81cc32fc2c1c443a257634d452908",
+   "name": "TrustAnnotations",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "main",
+   "inherited": false,
+   "configFile": "lakefile.toml"}],
+ "name": "Sandbox",
+ "lakeDir": ".lake",
+ "fixedToolchain": false}

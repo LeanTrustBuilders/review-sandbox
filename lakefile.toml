@@ -1,0 +1,11 @@
+name = "Sandbox"
+defaultTargets = ["Sandbox"]
+
+# The attributes that record claims, specifications and examples in the code.
+[[require]]
+name = "TrustAnnotations"
+git = "https://github.com/LeanTrustBuilders/annotations"
+rev = "main"
+
+[[lean_lib]]
+name = "Sandbox"
