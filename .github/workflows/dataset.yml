@@ -48,6 +48,7 @@ jobs:
         with:
           root: Sandbox
           repo: ${{ github.repository }}
+          check: meaning term
           publish: ${{ steps.tag.outputs.tag }}
           replace: ${{ inputs.replace || 'false' }}
       - name: Rebuild the page, and read the issues waiting for this dataset
