@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: trust-site, with evidence-core and evidence-store
+      - name: referee-site, with evidence-core and evidence-store
         run: pip install -q git+https://github.com/LeanTrustBuilders/referee-site
       - name: Datasets
         run: |
@@ -42,7 +42,7 @@ jobs:
       - name: The source at the dataset's commit
         run: git worktree add -q "$RUNNER_TEMP/src" "$(jq -r .library.commit "$NEWEST/meta.json")"
       - name: Build the page
-        run: trust-site claim --dataset "$NEWEST" --store evidence --source "$RUNNER_TEMP/src" $AT --out _site
+        run: referee-site claim --dataset "$NEWEST" --store evidence --source "$RUNNER_TEMP/src" $AT --out _site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

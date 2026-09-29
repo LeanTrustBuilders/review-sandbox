@@ -39,7 +39,7 @@ evidence-store submit --repo LeanTrustBuilders/review-sandbox --decl Sandbox.Div
 | `dataset.yml` | a push that changes the library | builds it, extracts its dataset with [trust-extract](https://github.com/LeanTrustBuilders/extractor), publishes it as the release `dataset-<commit12>` |
 | `evidence-intake.yml` | an issue or comment; every six hours | records reviews, problems, questions, replies and statuses in `evidence/` |
 | `evidence-check.yml` | a change to `evidence/` | nothing changed or removed; a pull request's records are by its author |
-| `pages.yml` | after either of the first two | builds the claim's page with [trust-site](https://github.com/LeanTrustBuilders/referee-site) `claim` |
+| `pages.yml` | after either of the first two | builds the claim's page with [referee-site](https://github.com/LeanTrustBuilders/referee-site) `claim` |
 
 `evidence-intake.yml`, `evidence-check.yml`, `evidence/store.json` and the issue forms were written
 by `evidence-store init --repo LeanTrustBuilders/review-sandbox --root Sandbox --pages-workflow pages.yml --claim Sandbox.infinitely_many_primes`.
